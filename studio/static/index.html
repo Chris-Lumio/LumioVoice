@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LumioSolutions Voice Studio</title>
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/studio.css">
+  <script src="/assets/studio.js" defer></script>
+</head>
+<body>
+  <div class="glow" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand" href="/">
+      <img src="/assets/logo.svg" alt="" width="34" height="34">
+      <span class="wordmark"><b>Lumio</b>Solutions</span>
+    </a>
+    <span class="product">Voice Studio</span>
+    <span class="spacer"></span>
+    <span class="status" id="status" data-state="loading"><i></i><span>Warming up the voice engine…</span></span>
+  </header>
+
+  <main class="studio">
+    <section class="hero">
+      <h1>Give your words a <em>voice.</em></h1>
+      <p>Clone a voice from a few seconds of audio, or design a new one. Write in Arabic, Arabizi, or any of 646 languages. Everything runs privately on this computer.</p>
+    </section>
+
+    <form class="card composer" id="composer" autocomplete="off">
+      <div class="modes" role="tablist" aria-label="Voice mode">
+        <button type="button" role="tab" class="mode" data-mode="clone" aria-selected="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          Clone a voice
+        </button>
+        <button type="button" role="tab" class="mode" data-mode="design" aria-selected="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z"/></svg>
+          Design a voice
+        </button>
+        <button type="button" role="tab" class="mode" data-mode="pi5" aria-selected="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+          Raspberry Pi 5
+        </button>
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="text">Script</label>
+          <span class="count" id="count">0 / 2000</span>
+        </div>
+        <textarea id="text" name="text" dir="auto" rows="5" maxlength="2000"
+          placeholder="Type what the voice should say… Arabic, Arabizi (shou el wade3?), or any language">أهلين! هيدا صوت لوميو، عم بحكي معك من اللابتوب بلا إنترنت.</textarea>
+        <p class="hint" id="arabizi-offer" hidden>Written in Arabizi? <button type="button" class="link" id="arabizi-force">Convert it to Arabic</button></p>
+      </div>
+
+      <div class="field arabizi" id="arabizi" hidden>
+        <div class="label-row">
+          <label for="arabic"><span class="badge">Arabizi</span> Converted to Arabic</label>
+          <label class="toggle small"><input type="checkbox" id="arabizi-on" checked><span></span>Speak this version</label>
+        </div>
+        <textarea id="arabic" dir="rtl" rows="2" spellcheck="false"></textarea>
+        <p class="hint" id="arabizi-hint">Check the Arabic and fix any word before generating.</p>
+      </div>
+
+      <div class="panel" id="panel-clone">
+        <div class="label-row"><span class="label">Reference voice</span><span class="hint">3–10 seconds of clear speech works best</span></div>
+        <div class="reference" id="reference" data-filled="false">
+          <div class="drop" id="drop">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+            <div><b>Drop an audio file</b> or <label class="link" for="file">browse</label></div>
+            <input type="file" id="file" accept="audio/*" hidden>
+            <div class="drop-actions">
+              <button type="button" class="pill" id="record"><span class="rec-dot"></span><span>Record</span></button>
+              <button type="button" class="pill" id="preset" hidden>Use the Lumio Lebanese voice</button>
+            </div>
+          </div>
+          <div class="ref-card">
+            <button type="button" class="icon-btn" id="ref-play" aria-label="Play reference"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></button>
+            <canvas id="ref-wave" height="44"></canvas>
+            <div class="ref-meta"><b id="ref-name">Reference</b><span id="ref-length">0.0 s</span></div>
+            <button type="button" class="icon-btn subtle" id="ref-clear" aria-label="Remove reference"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="transcript">What the reference says</label>
+            <button type="button" class="link" id="transcribe" hidden>Transcribe it for me</button>
+          </div>
+          <textarea id="transcript" dir="auto" rows="2" placeholder="Exact words spoken in the reference recording"></textarea>
+          <p class="hint" id="transcript-hint">Needed for cloning. An exact transcript gives the closest match.</p>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-design" hidden>
+        <div class="label-row"><span class="label">Voice character</span><span class="hint">Leave a group on Any to let the model choose</span></div>
+        <div class="traits" id="traits"></div>
+      </div>
+
+      <div class="panel" id="panel-pi5" hidden>
+        <div class="pi5-header">
+          <div class="pi5-pill ok">
+            <span class="dot"></span> 8GB RAM: Supported (~3.2GB Model)
+          </div>
+          <div class="pi5-pill warn">
+            <span class="dot"></span> CPU Only: RTF ~10–15× (Compute Bound)
+          </div>
+        </div>
+
+        <div class="pi5-card">
+          <div class="label-row">
+            <span class="label">Pi 5 Low-Power CPU Profile</span>
+            <span class="hint">Quad Cortex-A76 Optimized</span>
+          </div>
+          <p class="small-desc">
+            On a Pi 5 CPU without CUDA, standard 32–48 step diffusion causes 45–90s lag. This profile reduces synthesis to <strong>8–10 steps</strong>, disables denoise token overhead, sets chunking to 8s, and uses the Lumio Lebanese reference.
+          </p>
+          <div class="pi5-actions">
+            <button type="button" class="pill accent-pill" id="apply-pi5-profile">
+              ⚡ Apply Pi 5 Tuning
+            </button>
+            <button type="button" class="pill" id="copy-pi5-cmd">
+              📋 Copy Pi 5 Start Command
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label>Pi 5 Execution Strategy</label>
+          </div>
+          <div class="pi5-options">
+            <div class="pi5-opt-card active" id="opt-standalone">
+              <b>Mode 1: Pure Offline on Pi 5</b>
+              <p>Runs OmniVoice directly on the Pi 5 CPU. Requires 8–10 steps for usable latency (~15–25s per sentence).</p>
+            </div>
+            <div class="pi5-opt-card" id="opt-bridge">
+              <b>Mode 2: Pi 5 Satellite + PC GPU (Recommended)</b>
+              <p>Home Assistant runs on the Pi 5, streaming voice requests to this PC over Wyoming. Instant ~1–2s response!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label-row"><label for="language">Language</label><span class="hint">646 languages and dialects</span></div>
+        <div class="language">
+          <input id="language" list="languages" value="Levantine Arabic" spellcheck="false">
+          <datalist id="languages"></datalist>
+          <div class="quick" id="quick-langs"></div>
+        </div>
+      </div>
+
+      <details class="advanced">
+        <summary>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+          Fine-tune
+        </summary>
+        <div class="grid">
+          <label class="slider">Speed <output id="speed-out">1.00×</output>
+            <input type="range" id="speed" min="0.5" max="1.5" step="0.05" value="1"></label>
+          <label class="slider">Quality steps <output id="steps-out">32</output>
+            <input type="range" id="steps" min="4" max="64" step="1" value="32"></label>
+          <label class="slider">Guidance <output id="guidance-out">2.0</output>
+            <input type="range" id="guidance" min="0" max="4" step="0.1" value="2"></label>
+          <label class="number">Exact length (seconds)
+            <input type="number" id="duration" min="0" max="120" step="0.5" placeholder="Auto"></label>
+          <label class="toggle"><input type="checkbox" id="denoise" checked><span></span>Denoise</label>
+          <label class="toggle"><input type="checkbox" id="preprocess" checked><span></span>Clean up reference</label>
+          <label class="toggle"><input type="checkbox" id="postprocess" checked><span></span>Trim long silences</label>
+          <label class="number wide" id="instruct-field">Style instruction (optional)
+            <input type="text" id="instruct" placeholder="e.g. Female, Young Adult"></label>
+          <label class="slider" title="Lower = more predictable Arabic cadence. Try 3.0 for Levantine Arabic.">Rhythm randomness <output id="pos_temp-out">5.0</output>
+            <input type="range" id="pos_temp" min="0" max="20" step="0.5" value="5"></label>
+          <label class="slider" title="Smaller = tighter phoneme timing, fewer artefacts. Try 0.05 for Arabic.">Timing shift <output id="t_shift-out">0.10</output>
+            <input type="range" id="t_shift" min="0" max="1" step="0.01" value="0.1"></label>
+          <label class="slider" title="0 = greedy (most stable). Raise to 0.2–0.5 for variation between batch takes.">Token sampling <output id="class_temp-out">0.00</output>
+            <input type="range" id="class_temp" min="0" max="2" step="0.05" value="0"></label>
+          <label class="slider" title="Higher = more consistent speaker identity across cloning runs.">Identity penalty <output id="layer_penalty-out">5.0</output>
+            <input type="range" id="layer_penalty" min="0" max="20" step="0.5" value="5"></label>
+          <label class="slider" title="Maximum chunk length for long texts. Smaller = less VRAM, may affect prosody at joins.">Chunk duration (s) <output id="chunk_duration-out">15</output>
+            <input type="range" id="chunk_duration" min="5" max="60" step="5" value="15"></label>
+          <label class="toggle" title="Converts numbers and dates to spoken words before synthesis."><input type="checkbox" id="normalize_text"><span></span>Normalize numbers &amp; dates</label>
+          <div class="preset-bar wide">
+            <button type="button" class="pill" id="lebanese-preset">⭐ Lebanese quality preset</button>
+            <span class="hint">steps 48 · guidance 2.5 · rhythm 3.0 · shift 0.05</span>
+          </div>
+        </div>
+      </details>
+
+      <div class="generate-row">
+        <button type="submit" class="generate" id="generate">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="go-label">Generate voice</span>
+          <kbd>Ctrl ↵</kbd>
+        </button>
+        <label class="batch-label" title="Generate this many takes in one click. Raise Token sampling above 0 to get different results each time.">
+          <span>Takes</span>
+          <input type="number" id="batch" min="1" max="5" value="1">
+        </label>
+      </div>
+    </form>
+
+    <aside class="stage">
+      <section class="card player" id="player" data-empty="true">
+        <div class="empty">
+          <div class="orb" aria-hidden="true"><i></i><i></i><i></i></div>
+          <h2>Your take will appear here</h2>
+          <p>Write a script, choose a voice, and press Generate.</p>
+        </div>
+        <div class="take">
+          <div class="take-head">
+            <div>
+              <span class="eyebrow" id="take-mode">Cloned voice</span>
+              <h2 id="take-title">Take 1</h2>
+            </div>
+            <a class="pill" id="download" download="lumio-take.wav">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M5 20h14"/></svg>
+              Download
+            </a>
+          </div>
+          <canvas id="wave" height="120" aria-label="Waveform"></canvas>
+          <div class="transport">
+            <button type="button" class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24"><path class="i-play" d="M8 5v14l11-7Z"/><path class="i-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+            <span class="time" id="time">0:00 / 0:00</span>
+            <span class="spacer"></span>
+            <span class="chip" id="take-render"></span>
+            <span class="chip" id="take-lang"></span>
+          </div>
+          <p class="take-text" id="take-text" dir="auto"></p>
+          <p class="take-source" id="take-source" hidden></p>
+        </div>
+      </section>
+
+      <section class="card history">
+        <div class="label-row"><h3>Recent takes</h3><span class="hint">Kept until you close this tab</span></div>
+        <ol id="history"><li class="none">Nothing yet.</li></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <span>© LumioSolutions</span>
+    <span>Private by design: audio never leaves this computer</span>
+    <span id="gpu"></span>
+  </footer>
+
+  <div class="toast" id="toast" role="alert" hidden></div>
+  <audio id="audio" preload="auto"></audio>
+  <audio id="ref-audio" preload="auto"></audio>
+</body>
+</html>

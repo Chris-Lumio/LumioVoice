@@ -1,0 +1,5 @@
+# Install torch/torchaudio CUDA wheels first using the official PyTorch index.
+-r requirements.txt
+omnivoice==0.2.1
+faster-whisper==1.2.1
+bitsandbytes==0.50.2
