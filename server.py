@@ -5,12 +5,29 @@ import contextlib
 import io
 import json
 import wave
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 from aiohttp import web, ClientSession
 from wyoming.server import AsyncServer
 from config import Settings, ROOT, PRIVATE
 from services import Services
 from bridges import VoiceHandler, ollama_app
+
+METRICS_FILE = PRIVATE / 'performance.jsonl'
+def record_metric(kind, started, ok, error=None, **details):
+    METRICS_FILE.parent.mkdir(exist_ok=True)
+    entry = {'timestamp': datetime.now(timezone.utc).isoformat(), 'kind': kind,
+             'duration_ms': round((time.perf_counter()-started)*1000, 1), 'ok': bool(ok), **details}
+    if error: entry['error'] = str(error)[:500]
+    with METRICS_FILE.open('a', encoding='utf-8') as f: f.write(json.dumps(entry, ensure_ascii=False)+'\n')
+def read_metrics():
+    if not METRICS_FILE.exists(): return []
+    rows=[]
+    for line in METRICS_FILE.read_text(encoding='utf-8').splitlines()[-500:]:
+        try: rows.append(json.loads(line))
+        except json.JSONDecodeError: pass
+    return list(reversed(rows))
 
 @web.middleware
 async def local_only(request, handler):
@@ -37,7 +54,7 @@ def desk_app(settings, services, lan=False):
         return web.FileResponse(ROOT / 'web' / 'index.html')
     async def asset(request):
         name = request.match_info['name']
-        if name not in ('app.js', 'style.css'):
+        if name not in ('app.js', 'style.css', 'performance.js'):
             raise web.HTTPNotFound()
         return web.FileResponse(ROOT / 'web' / name)
     async def status(request):
@@ -46,19 +63,27 @@ def desk_app(settings, services, lan=False):
             'offline': bool(getattr(services, 'offline', False)),
             'wyoming_port': 10700, 'ollama_port': 11435, 'accent_target': 'Lebanese Arabic',
             'accent_note': 'Levantine Arabic is selected. A Lebanese reference recording improves consistency; accent is not guaranteed.'})
+    async def performance(request): return web.FileResponse(ROOT / 'web' / 'performance.html')
+    async def metrics(request): return web.json_response({'items': read_metrics()})
+    async def clear_metrics(request): METRICS_FILE.unlink(missing_ok=True); return web.json_response({'items': []})
     async def configure(request):
         values = await request.json()
         settings.update(values)
         return await status(request)
     async def chat(request):
+        started=time.perf_counter()
         body = await request.json()
-        result = await services.chat(body.get('messages'))
-        return web.json_response(result)
+        try:
+            result=await services.chat(body.get('messages')); record_metric('chat',started,True,model=settings.data.get('chat_model'),input_messages=len(body.get('messages') or []),output_characters=len(result.get('content') or '')); return web.json_response(result)
+        except Exception as error: record_metric('chat',started,False,error=error); raise
     async def tts(request):
+        started=time.perf_counter()
         body = await request.json()
-        audio = await services.synthesize(body.get('text'))
-        return web.Response(body=audio, content_type='audio/wav')
+        try:
+            audio=await services.synthesize(body.get('text')); record_metric('tts',started,True,characters=len(body.get('text') or ''),audio_bytes=len(audio)); return web.Response(body=audio, content_type='audio/wav')
+        except Exception as error: record_metric('tts',started,False,error=error); raise
     async def stt(request):
+        started=time.perf_counter()
         audio = await request.read()
         if not audio:
             raise ValueError('Record something first.')
@@ -66,8 +91,9 @@ def desk_app(settings, services, lan=False):
         extension = {'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/wav': 'wav'}.get(content_type)
         if not extension:
             raise ValueError('Unsupported recording format')
-        text = await services.transcribe(audio, f'microphone.{extension}', content_type)
-        return web.json_response({'text': text})
+        try:
+            text=await services.transcribe(audio, f'microphone.{extension}', content_type); record_metric('stt',started,True,audio_bytes=len(audio),output_characters=len(text)); return web.json_response({'text':text})
+        except Exception as error: record_metric('stt',started,False,error=error); raise
     async def models(request):
         return web.json_response({'models': await services.models()})
     async def reference(request):
@@ -91,6 +117,9 @@ def desk_app(settings, services, lan=False):
     async def bridge_token(request):
         return web.json_response({'token': settings.data['bridge_token']})
     app.router.add_get('/', index)
+    app.router.add_get('/performance', performance)
+    app.router.add_get('/api/performance', metrics)
+    app.router.add_delete('/api/performance', clear_metrics)
     app.router.add_get('/assets/{name}', asset)
     app.router.add_get('/api/status', status)
     app.router.add_post('/api/settings', configure)
