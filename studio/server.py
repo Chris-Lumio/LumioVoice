@@ -24,12 +24,28 @@ PROJECT = ROOT.parent
 PRIVATE = PROJECT / '.local'
 MODELS = PRIVATE / 'models'
 WORK = PRIVATE / 'studio'
+METRICS_FILE = WORK / 'performance.jsonl'
 STATIC = ROOT / 'static'
 TAUGHT_WORDS = PRIVATE / 'arabizi-words.json'  # spellings the user taught the converter
 ARABIZI_WORD = re.compile(r"[a-z0-9']{1,40}")
 ARABIC_WORD = re.compile(r'[ء-ْ٠-٩ ]{1,60}')
 MAX_TEXT = 2000
 MAX_REFERENCE = 10 * 1024 * 1024
+
+def record_metric(kind, started, ok, error=None, **details):
+    WORK.mkdir(parents=True, exist_ok=True)
+    entry = {'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'kind': kind,
+             'duration_ms': round((time.perf_counter()-started)*1000, 1), 'ok': bool(ok), **details}
+    if error: entry['error'] = str(error)[:500]
+    with METRICS_FILE.open('a', encoding='utf-8') as f: f.write(json.dumps(entry, ensure_ascii=False)+'\n')
+
+def read_metrics():
+    if not METRICS_FILE.exists(): return []
+    rows=[]
+    for line in METRICS_FILE.read_text(encoding='utf-8').splitlines()[-500:]:
+        try: rows.append(json.loads(line))
+        except json.JSONDecodeError: pass
+    return list(reversed(rows))
 
 # Voice Design attributes, in the English wording the model expects.
 ATTRIBUTES = {
@@ -222,9 +238,17 @@ def studio_app(engine):
     async def index(request):
         return web.FileResponse(STATIC / 'index.html')
 
+    async def performance(request):
+        return web.FileResponse(STATIC / 'performance.html')
+    async def metrics(request):
+        return web.json_response({'items': read_metrics()})
+    async def clear_metrics(request):
+        METRICS_FILE.unlink(missing_ok=True)
+        return web.json_response({'items': []})
+
     async def asset(request):
         name = request.match_info['name']
-        if name not in ('studio.css', 'studio.js', 'logo.svg'):
+        if name not in ('studio.css', 'studio.js', 'performance.js', 'performance.css', 'logo.svg'):
             raise web.HTTPNotFound()
         return web.FileResponse(STATIC / name)
 
@@ -291,12 +315,16 @@ def studio_app(engine):
         return web.json_response({'words': taught})
 
     async def transcribe(request):
+        started = time.perf_counter()
         _, reference = await read_form(request)
         if not reference:
             raise ValueError('Add a reference recording first.')
-        async with engine.lock:
-            text = await asyncio.to_thread(engine.transcribe, reference)
-        return web.json_response({'transcript': text})
+        try:
+            async with engine.lock: text = await asyncio.to_thread(engine.transcribe, reference)
+            record_metric('transcribe', started, True, audio_bytes=len(reference), output_characters=len(text))
+            return web.json_response({'transcript': text})
+        except Exception as error:
+            record_metric('transcribe', started, False, error=error); raise
 
     async def generate(request):
         form, reference = await read_form(request)
@@ -332,9 +360,12 @@ def studio_app(engine):
             'chunk_duration': number(form, 'chunk_duration', 15.0, 5.0, 60.0),
         }
         started = time.perf_counter()
-        async with engine.lock:
-            audio, seconds, transcript = await asyncio.to_thread(
-                engine.generate, params, reference if mode == 'clone' else None)
+        try:
+            async with engine.lock: audio, seconds, transcript = await asyncio.to_thread(engine.generate, params, reference if mode == 'clone' else None)
+            elapsed = time.perf_counter() - started
+            record_metric('generate', started, True, mode=mode, profile='Raspberry Pi 5' if form.get('mode') == 'pi5' else 'GPU', characters=len(text), audio_seconds=round(seconds,2), realtime_factor=round(elapsed/seconds,2) if seconds else None)
+        except Exception as error:
+            record_metric('generate', started, False, error=error, mode=mode, characters=len(text)); raise
         return web.Response(body=audio, content_type='audio/wav', headers={
             'X-Audio-Seconds': f'{seconds:.2f}',
             'X-Render-Seconds': f'{time.perf_counter() - started:.2f}',
@@ -343,6 +374,9 @@ def studio_app(engine):
 
     app = web.Application(middlewares=[guard], client_max_size=MAX_REFERENCE + 1024 * 1024)
     app.router.add_get('/', index)
+    app.router.add_get('/performance', performance)
+    app.router.add_get('/api/performance', metrics)
+    app.router.add_delete('/api/performance', clear_metrics)
     app.router.add_get('/assets/{name}', asset)
     app.router.add_get('/api/info', info)
     app.router.add_get('/api/presets/{id}', preset_audio)

@@ -1,27 +1,90 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lumio · Lebanese voice desk</title><link rel="stylesheet" href="/assets/style.css"><script defer src="/assets/app.js"></script></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumio · Lebanese voice desk</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script defer src="/assets/app.js"></script>
+</head>
 <body>
-<header><a class="brand" href="/">lumio<span>صوت البيت</span></a><div class="badge">API test desk <span>·</span> Lebanese Arabic</div><a href="/performance">Performance ↗</a></header>
-<main>
-<section class="intro"><div class="eyebrow">A familiar voice, at home</div><h1>أهلين، شو بدّك نعمل؟</h1><p>Try a conversation in Lebanese Arabic. Your PC hosts this desk; online APIs do the listening, thinking, and speaking.</p></section>
-<div class="layout"><section class="conversation panel"><div class="panelhead"><h2>Conversation</h2><button id="clear" class="subtle">New conversation</button></div>
-<div id="messages" aria-live="polite"><div class="empty"><div class="orb">ل</div><p>Type a question or use your microphone.</p><small>Replies default to short, everyday Lebanese Arabic.</small></div></div>
-<div id="status" role="status">Checking your setup…</div>
-<form id="chat-form"><label for="text">Your message</label><textarea id="text" dir="auto" placeholder="كيف فيك تساعدني بالبيت؟" rows="3" maxlength="1500"></textarea><div class="actions"><button id="record" type="button" class="secondary">● Record</button><button id="send" type="submit">Send & listen ↗</button></div></form>
-<div class="samples"><button type="button" data-sample="مرحبا! شو فيك تساعدني أعمل اليوم؟">Try a conversation</button><button type="button" id="voice-test">Hear a Lebanese phrase</button></div>
-<audio id="audio" controls></audio>
-</section>
-<aside>
-<section class="panel"><div class="panelhead"><h2>Connection</h2><span id="connection" class="pill">Not configured</span></div>
-<p class="small">Groq handles recognition and replies. OmniVoice on Hugging Face speaks the answer. Use free-tier accounts for this test; no paid plan or credits are required. Quota errors stop requests.</p>
-<form id="settings-form"><label for="groq-key">Groq API key</label><input id="groq-key" type="password" autocomplete="off" placeholder="Enter a key locally"><a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Get a Groq key ↗</a>
-<label for="chat-model">AI model</label><input id="chat-model" list="models"><datalist id="models"></datalist><button id="check-key" type="button" class="subtle">Check key & available models</button>
-<details><summary>Hugging Face access</summary><p class="small">The public demo may work anonymously. Add a token if its queue requires a signed-in account.</p><label for="hf-token">Hugging Face token (optional)</label><input id="hf-token" type="password" autocomplete="off"></details>
-<button type="submit" class="full">Save settings</button><small>Keys are stored only in this PC’s private settings file and sent to their provider. Blank fields retain saved keys.</small></form></section>
-<section class="panel"><h2>The Lebanese voice</h2><p class="small"><strong>Default: Levantine Arabic.</strong> Lebanese wording is requested from the AI. The hosted voice may vary; a Lebanese reference helps establish a consistent accent and speaker.</p>
-<form id="reference-form"><label for="reference">Optional reference · WAV</label><input id="reference" type="file" accept=".wav,audio/wav"><label for="reference-text">Exactly what the speaker says</label><textarea id="reference-text" dir="auto" rows="2"></textarea><div class="actions"><button type="submit" class="secondary">Save reference</button><button id="remove-reference" type="button" class="subtle">Remove</button></div><small id="reference-status">No reference saved · voice design mode</small></form></section>
-<section class="panel ha"><div class="eyebrow">Home Assistant</div><h2>One pipeline, shared services.</h2><p class="small">Native Wyoming for listening and speech. Native Ollama integration for replies and exposed device tools.</p><details><summary>Connection details</summary><p id="lan-status" class="small"></p><dl><dt>Wyoming</dt><dd>PC address · port 10700</dd><dt>Ollama URL</dt><dd>http://PC-address:11435</dd><dt>Model</dt><dd>lumio-lebanese</dd><dt>Pipeline language</dt><dd>Arabic (ar)</dd></dl><button id="copy-token" class="secondary" type="button">Copy bridge API key</button><p class="small">Read README.md for setup. Home Assistant itself has not been connected or tested yet.</p></details></section>
-</aside></div>
-<footer>No models downloaded. Audio and messages go to online providers. The public voice demo can queue or rate-limit requests.</footer>
-</main></body></html>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/">
+        <span class="brand-mark">L</span>
+        <span class="brand-copy"><b>Lumio</b><small>LEBANESE VOICE DESK</small></span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a class="nav-item active" href="/"><span>◈</span> Voice assistant</a>
+        <a class="nav-item" href="/performance"><span>↗</span> Performance</a>
+      </nav>
+      <div class="side-bottom">
+        <div class="engine-status"><i></i><span><b>Local test desk</b><small>Home Assistant compatible</small></span></div>
+        <span class="side-caption">Levantine Arabic by default</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="crumb">LUMIO / HOME VOICE</span>
+          <div class="topbar-title">Lebanese voice desk <span class="badge">API test desk</span></div>
+        </div>
+        <div class="topbar-actions">
+          <a class="top-link" href="/performance">Performance <span>↗</span></a>
+          <span class="pill ready">● Local</span>
+        </div>
+      </header>
+
+      <section class="content">
+        <section class="intro">
+          <div class="eyebrow">A familiar voice, at home</div>
+          <h1>أهلين، شو بدّك نعمل؟</h1>
+          <p>Try a conversation in Lebanese Arabic. Your PC hosts this desk; online APIs do the listening, thinking, and speaking.</p>
+        </section>
+
+        <div class="layout">
+          <section class="conversation panel">
+            <div class="panelhead"><div><span class="section-kicker">LIVE CONVERSATION</span><h2>Talk to Lumio</h2></div><button id="clear" class="subtle">New conversation</button></div>
+            <div id="messages" aria-live="polite"><div class="empty"><div class="orb">ل</div><p>Type a question or use your microphone.</p><small>Replies default to short, everyday Lebanese Arabic.</small></div></div>
+            <div id="status" role="status">Checking your setup…</div>
+            <form id="chat-form">
+              <label for="text">Your message</label>
+              <textarea id="text" dir="auto" placeholder="كيف فيك تساعدني بالبيت؟" rows="3" maxlength="1500"></textarea>
+              <div class="actions"><button id="record" type="button" class="secondary">● Record</button><button id="send" type="submit">Send &amp; listen ↗</button></div>
+            </form>
+            <div class="samples"><button type="button" data-sample="مرحبا! شو فيك تساعدني أعمل اليوم؟">Try a conversation</button><button type="button" id="voice-test">Hear a Lebanese phrase</button></div>
+            <audio id="audio" controls></audio>
+          </section>
+
+          <aside class="side-stack">
+            <section class="panel">
+              <div class="panelhead"><div><span class="section-kicker">PROVIDER SETUP</span><h2>Connection</h2></div><span class="pill" id="connection">Not configured</span></div>
+              <p class="small">Groq handles recognition and replies. OmniVoice on Hugging Face speaks the answer. Use free-tier accounts for this test; no paid plan or credits are required. Quota errors stop requests.</p>
+              <form id="settings-form">
+                <label for="groq-key">Groq API key</label><input id="groq-key" type="password" autocomplete="off" placeholder="Enter a key locally"><a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Get a Groq key ↗</a>
+                <label for="chat-model">AI model</label><input id="chat-model" list="models"><datalist id="models"></datalist><button id="check-key" type="button" class="subtle">Check key &amp; available models</button>
+                <details><summary>Hugging Face access</summary><p class="small">The public demo may work anonymously. Add a token if its queue requires a signed-in account.</p><label for="hf-token">Hugging Face token (optional)</label><input id="hf-token" type="password" autocomplete="off"></details>
+                <button type="submit" class="full">Save settings</button><small>Keys are stored only in this PC’s private settings file and sent to their provider. Blank fields retain saved keys.</small>
+              </form>
+            </section>
+
+            <section class="panel">
+              <div class="panelhead"><div><span class="section-kicker">VOICE PROFILE</span><h2>The Lebanese voice</h2></div><span class="mini-pill">ar-LB</span></div>
+              <p class="small"><strong>Default: Levantine Arabic.</strong> Lebanese wording is requested from the AI. The hosted voice may vary; a Lebanese reference helps establish a consistent accent and speaker.</p>
+              <form id="reference-form"><label for="reference">Optional reference · WAV</label><input id="reference" type="file" accept=".wav,audio/wav"><label for="reference-text">Exactly what the speaker says</label><textarea id="reference-text" dir="auto" rows="2"></textarea><div class="actions"><button type="submit" class="secondary">Save reference</button><button id="remove-reference" type="button" class="subtle">Remove</button></div><small id="reference-status">No reference saved · voice design mode</small></form>
+            </section>
+
+            <section class="panel ha">
+              <div class="eyebrow">Home Assistant</div><h2>One pipeline, shared services.</h2>
+              <p class="small">Native Wyoming for listening and speech. Native Ollama integration for replies and exposed device tools.</p>
+              <details><summary>Connection details</summary><p id="lan-status" class="small"></p><dl><dt>Wyoming</dt><dd>PC address · port 10700</dd><dt>Ollama URL</dt><dd>http://PC-address:11435</dd><dt>Model</dt><dd>lumio-lebanese</dd><dt>Pipeline language</dt><dd>Arabic (ar)</dd></dl><button id="copy-token" class="secondary" type="button">Copy bridge API key</button><p class="small">Read README.md for setup. Home Assistant itself has not been connected or tested yet.</p></details>
+            </section>
+          </aside>
+        </div>
+        <footer>Private by design · Audio and messages stay in this local test desk unless sent to the configured provider.</footer>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

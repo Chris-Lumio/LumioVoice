@@ -10,18 +10,32 @@
 </head>
 <body>
   <div class="glow" aria-hidden="true"></div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/">
+        <span class="brand-mark">L</span>
+        <span class="brand-copy"><b>Lumio</b><small>VOICE STUDIO</small></span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a class="nav-item active" href="/"><span>◈</span> Voice Studio</a>
+        <a class="nav-item" href="/performance"><span>↗</span> Performance</a>
+      </nav>
+      <div class="side-bottom">
+        <div class="engine-status"><i></i><span><b>Private by design</b><small>Audio stays on this computer</small></span></div>
+        <span class="side-caption">Local voice workspace</span>
+      </div>
+    </aside>
 
-  <header class="top">
-    <a class="brand" href="/">
-      <img src="/assets/logo.svg" alt="" width="34" height="34">
-      <span class="wordmark"><b>Lumio</b>Solutions</span>
-    </a>
-    <span class="product">Voice Studio</span>
-    <span class="spacer"></span>
-    <span class="status" id="status" data-state="loading"><i></i><span>Warming up the voice engine…</span></span>
-  </header>
+    <main class="main">
+      <header class="topbar">
+        <div><span class="crumb">LUMIO / VOICE WORKSPACE</span><div class="topbar-title">Voice Studio <span class="product">Offline</span></div></div>
+        <div class="topbar-actions">
+          <a class="top-link" href="/performance">Performance <span>↗</span></a>
+          <span class="status" id="status" data-state="loading"><i></i><span>Warming up the voice engine…</span></span>
+        </div>
+      </header>
 
-  <main class="studio">
+      <section class="studio">
     <section class="hero">
       <h1>Give your words a <em>voice.</em></h1>
       <p>Clone a voice from a few seconds of audio, or design a new one. Write in Arabic, Arabizi, or any of 646 languages. Everything runs privately on this computer.</p>
@@ -236,13 +250,15 @@
         <ol id="history"><li class="none">Nothing yet.</li></ol>
       </section>
     </aside>
-  </main>
+      </section>
 
-  <footer class="foot">
-    <span>© LumioSolutions</span>
-    <span>Private by design: audio never leaves this computer</span>
-    <span id="gpu"></span>
-  </footer>
+      <footer class="foot">
+        <span>© LumioSolutions</span>
+        <span>Private by design: audio never leaves this computer</span>
+        <span id="gpu"></span>
+      </footer>
+    </main>
+  </div>
 
   <div class="toast" id="toast" role="alert" hidden></div>
   <audio id="audio" preload="auto"></audio>
